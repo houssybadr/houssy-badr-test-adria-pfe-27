@@ -1,0 +1,42 @@
+"Exact decimal: use strings for JSON monetary variables."
+scalar BigDecimal
+
+enum TransactionStatus { PENDING COMPLETED REJECTED UNKNOWN }
+
+type Transaction {
+    id: ID!
+    accountId: ID!
+    recipientAccountId: ID
+    amount: BigDecimal!
+    currency: String!
+    merchantCategory: String!
+    country: String!
+    createdAt: String!
+    status: TransactionStatus!
+}
+
+input CreateTransactionInput {
+    accountId: ID!
+    amount: BigDecimal!
+    currency: String!
+    merchantCategory: String!
+    country: String!
+}
+
+input CreateTransferInput {
+    sourceAccountId: ID!
+    targetAccountId: ID!
+    amount: BigDecimal!
+    currency: String!
+    country: String!
+}
+
+type Query {
+    transactions(accountId: ID): [Transaction!]!
+    transaction(id: ID!): Transaction
+}
+
+type Mutation {
+    createTransaction(input: CreateTransactionInput!): Transaction
+    transferMoney(input: CreateTransferInput!): Transaction
+}

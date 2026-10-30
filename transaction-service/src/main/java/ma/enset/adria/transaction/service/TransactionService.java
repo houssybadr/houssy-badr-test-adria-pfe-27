@@ -9,6 +9,7 @@ import io.github.resilience4j.retry.RetryRegistry;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import ma.enset.adria.transaction.client.AccountClient;
+import ma.enset.adria.transaction.kafka.TransactionEvents;
 import ma.enset.adria.transaction.domain.*;
 import ma.enset.adria.transaction.repository.TransactionRepository;
 import org.slf4j.Logger;
@@ -31,11 +32,13 @@ public class TransactionService {
     private final BigDecimal maxAmount;
     private final CircuitBreaker accountReads;
     private final Retry readRetry;
+    private final TransactionEvents events;
 
     public TransactionService(TransactionRepository repository, AccountClient accounts,
                               @Value("${bank.transaction.max-amount}") BigDecimal maxAmount,
-                              CircuitBreakerRegistry breakers, RetryRegistry retries) {
+                              CircuitBreakerRegistry breakers, RetryRegistry retries, TransactionEvents events) {
         if (maxAmount.signum() <= 0) throw new IllegalArgumentException("Le plafond doit etre positif");
+        this.events = events;
         this.repository = repository;
         this.accounts = accounts;
         this.maxAmount = maxAmount;
@@ -99,13 +102,15 @@ public class TransactionService {
         }
         transaction.setStatus(TransactionStatus.COMPLETED);
         try {
-            return repository.saveAndFlush(transaction);
+            transaction = repository.saveAndFlush(transaction);
         } catch (RuntimeException exception) {
             // Account movement succeeded; the previously committed PENDING row remains for reconciliation.
             log.error("Mouvement applique, finalisation locale a verifier: {}", transaction.getId(), exception);
             throw new TransactionException(UNAVAILABLE, "RECONCILIATION_REQUIRED",
                     "Mouvement applique; finalisation locale a verifier. Ne pas repeter l'operation", transaction.getId());
         }
+        events.publish(transaction);
+        return transaction;
     }
 
     private void checkAccount(AccountClient.Account account, String currency) {

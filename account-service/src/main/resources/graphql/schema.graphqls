@@ -1,0 +1,45 @@
+"Exact decimal: use strings for JSON variables. Responses also contain strings."
+scalar BigDecimal
+
+enum AccountStatus {
+    ACTIVE
+    BLOCKED
+}
+
+type Account {
+    id: ID!
+    customerReference: String!
+    status: AccountStatus!
+    currency: String!
+    balance: BigDecimal!
+}
+
+type AccountBalance {
+    accountId: ID!
+    balance: BigDecimal!
+    currency: String!
+}
+
+input CreateAccountInput {
+    customerReference: String!
+    currency: String!
+    balance: BigDecimal!
+}
+
+input BalanceOperationInput {
+    amount: BigDecimal!
+    currency: String!
+}
+
+type Query {
+    accounts: [Account!]!
+    account(id: ID!): Account
+    accountBalance(id: ID!): AccountBalance
+}
+
+type Mutation {
+    createAccount(input: CreateAccountInput!): Account
+    changeAccountStatus(id: ID!, status: AccountStatus!): Account
+    debitAccount(id: ID!, input: BalanceOperationInput!): Account
+    creditAccount(id: ID!, input: BalanceOperationInput!): Account
+}

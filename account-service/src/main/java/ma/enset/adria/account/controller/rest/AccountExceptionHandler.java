@@ -1,4 +1,4 @@
-package ma.enset.adria.account.web.rest;
+package ma.enset.adria.account.controller.rest;
 
 import jakarta.validation.ConstraintViolationException;
 import ma.enset.adria.account.service.AccountNotFoundException;

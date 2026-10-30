@@ -1,4 +1,4 @@
-package ma.enset.adria.account.web.rest;
+package ma.enset.adria.account.controller.rest;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;

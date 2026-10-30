@@ -1,0 +1,19 @@
+# Maven
+**/target/
+# IDE
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+# Secrets
+.env
+.env.*
+!.env.example
+# Local files
+*.log
+__pycache__/
+.venv/
+.DS_Store
+Thumbs.db

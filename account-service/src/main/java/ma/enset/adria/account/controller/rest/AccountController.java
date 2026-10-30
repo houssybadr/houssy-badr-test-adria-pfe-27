@@ -7,6 +7,7 @@ import ma.enset.adria.account.service.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.net.URI;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -48,6 +49,16 @@ public class AccountController {
     public AccountView credit(@PathVariable UUID id, @Valid @RequestBody BalanceOperationRequest request) {
         return service.credit(id, request);
     }
+
+    @PostMapping("/transfers")
+    public ResponseEntity<Void> transfer(@Valid @RequestBody TransferRequest request) {
+        service.transfer(request.sourceAccountId(), request.targetAccountId(),
+                new BalanceOperationRequest(request.amount(), request.currency()));
+        return ResponseEntity.noContent().build();
+    }
+
+    public record TransferRequest(@NotNull UUID sourceAccountId, @NotNull UUID targetAccountId,
+                                  @NotNull BigDecimal amount, @NotNull String currency) {}
 
     public record StatusRequest(@NotNull AccountStatus status) {}
 }

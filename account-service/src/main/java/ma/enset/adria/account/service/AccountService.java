@@ -66,6 +66,31 @@ public class AccountService {
         return apply(id, request, true);
     }
 
+    @Transactional
+    public void transfer(@NotNull UUID sourceId, @NotNull UUID targetId,
+                         @NotNull @Valid BalanceOperationRequest request) {
+        if (sourceId.equals(targetId)) {
+            throw new AccountRuleException("SAME_ACCOUNT", "Les deux comptes doivent etre differents");
+        }
+        // Lock in a fixed order to avoid opposite transfers deadlocking each other.
+        Account first = locked(sourceId.compareTo(targetId) < 0 ? sourceId : targetId);
+        Account second = locked(sourceId.compareTo(targetId) < 0 ? targetId : sourceId);
+        Account source = first.getId().equals(sourceId) ? first : second;
+        Account target = first.getId().equals(targetId) ? first : second;
+        if (source.getStatus() != AccountStatus.ACTIVE || target.getStatus() != AccountStatus.ACTIVE) {
+            throw new AccountRuleException("ACCOUNT_BLOCKED", "Les deux comptes doivent etre actifs");
+        }
+        if (!source.getCurrency().equals(request.currency()) || !target.getCurrency().equals(request.currency())) {
+            throw new AccountRuleException("CURRENCY_MISMATCH", "Les devises doivent correspondre");
+        }
+        BigDecimal remaining = source.getBalance().subtract(request.amount());
+        BigDecimal received = target.getBalance().add(request.amount());
+        if (remaining.signum() < 0) throw new AccountRuleException("INSUFFICIENT_FUNDS", "Solde insuffisant");
+        if (received.compareTo(MAX_BALANCE) > 0) throw new AccountRuleException("BALANCE_LIMIT", "Solde destinataire trop eleve");
+        source.setBalance(remaining);
+        target.setBalance(received);
+    }
+
     private AccountView apply(UUID id, BalanceOperationRequest request, boolean credit) {
         Account account = locked(id);
         if (account.getStatus() != AccountStatus.ACTIVE) {
